@@ -4,12 +4,12 @@
 
 ## Структура
 src/
-├── Game.java # Точка входа, окно
-├── GamePanel.java # Игровой цикл, отрисовка
-├── Player.java # Игрок (движение, прыжки, гравитация)
-├── Platform.java # Платформы
-├── Coin.java # Монетки
-└── InputHandler.java # Обработка клавиш
+├── main.Game.java # Точка входа, окно
+├── core.GamePanel.java # Игровой цикл, отрисовка
+├── entities.Player.java # Игрок (движение, прыжки, гравитация)
+├── entities.Platform.java # Платформы
+├── entities.Coin.java # Монетки
+└── core.InputHandler.java # Обработка клавиш
 
 resources/
 └── sprites/
@@ -27,7 +27,7 @@ resources/
 ## Запуск
 javac -d out src/.java
 cp -r resources/ out/
-java -cp out Game
+java -cp out main.Game
 
 ## Принципы
 
@@ -35,9 +35,9 @@ java -cp out Game
 
 | Класс | Что делает |
 |-------|------------|
-| `Game` | Окно и запуск |
-| `GamePanel` | Цикл, отрисовка, связь компонентов |
-| `Player` | Только логика игрока |
-| `Platform` | Только платформа |
-| `Coin` | Только монетка |
-| `InputHandler` | Только клавиши |
+| `main.Game` | Окно и запуск |
+| `core.GamePanel` | Цикл, отрисовка, связь компонентов |
+| `entities.Player` | Только логика игрока |
+| `entities.Platform` | Только платформа |
+| `entities.Coin` | Только монетка |
+| `core.InputHandler` | Только клавиши |

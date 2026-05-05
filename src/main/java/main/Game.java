@@ -1,3 +1,7 @@
+package main;
+
+import core.GamePanel;
+
 import javax.swing.*;
 
 public class Game {

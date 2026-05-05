@@ -1,4 +1,4 @@
-package Generator;
+package utils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

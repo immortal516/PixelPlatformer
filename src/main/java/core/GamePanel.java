@@ -1,3 +1,12 @@
+package core;
+
+import data.Leaderboard;
+import effects.Firework;
+import entities.Coin;
+import entities.Platform;
+import entities.Player;
+import main.Game;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;

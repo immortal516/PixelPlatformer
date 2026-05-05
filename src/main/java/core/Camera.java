@@ -1,3 +1,5 @@
+package core;
+
 public class Camera {
     private int x, y;
     private int viewWidth, viewHeight;
