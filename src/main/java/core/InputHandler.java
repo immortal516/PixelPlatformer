@@ -4,7 +4,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class InputHandler implements KeyListener {
-    private boolean left, right, jump;
+    private boolean left, right, jump, h, shift, down;
 
     @Override
     public void keyPressed(KeyEvent e) {
@@ -15,6 +15,9 @@ public class InputHandler implements KeyListener {
             case KeyEvent.VK_A     -> left = true;
             case KeyEvent.VK_D     -> right = true;
             case KeyEvent.VK_W     -> jump = true;
+            case KeyEvent.VK_H     -> h = true;
+            case KeyEvent.VK_SHIFT -> shift = true;
+            case KeyEvent.VK_S     -> down = true;
         }
     }
 
@@ -27,6 +30,9 @@ public class InputHandler implements KeyListener {
             case KeyEvent.VK_A     -> left = false;
             case KeyEvent.VK_D     -> right = false;
             case KeyEvent.VK_W     -> jump = false;
+            case KeyEvent.VK_H     -> h = false;
+            case KeyEvent.VK_SHIFT -> shift = false;
+            case KeyEvent.VK_S     -> down = false;
         }
     }
 
@@ -36,7 +42,9 @@ public class InputHandler implements KeyListener {
     public boolean isLeft()  { return left; }
     public boolean isRight() { return right; }
     public boolean isJump()  { return jump; }
-
-    // Чтобы стартовый пробел не вызывал прыжок
+    public boolean isH()     { return h; }
+    public boolean isShift() { return shift; }
+    public boolean isDown()  { return down; }
     public void consumeJump() { jump = false; }
+    public void consumeH()    { h = false; }
 }

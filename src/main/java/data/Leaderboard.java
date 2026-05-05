@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class Leaderboard {
+public class Leaderboard implements Serializable {
     private ArrayList<Integer> scores;
     private final String FILE_NAME = "leaders.dat";
     private final int MAX_SIZE = 50;
@@ -21,15 +21,13 @@ public class Leaderboard {
             scores.remove(scores.size() - 1);
         }
         save();
-        // Новый рекорд, если это первое место
         return !scores.isEmpty() && scores.get(0) == score;
     }
 
     public int[] getTop5() {
-        int[] top = new int[Math.min(5, scores.size())];
-        for (int i = 0; i < top.length; i++) {
-            top[i] = scores.get(i);
-        }
+        int size = Math.min(5, scores.size());
+        int[] top = new int[size];
+        for (int i = 0; i < size; i++) top[i] = scores.get(i);
         return top;
     }
 
@@ -45,7 +43,7 @@ public class Leaderboard {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
             oos.writeObject(scores);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Ошибка сохранения лидерборда");
         }
     }
 }

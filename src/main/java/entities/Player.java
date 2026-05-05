@@ -12,6 +12,9 @@ public class Player {
     private boolean onGround;
     private boolean facingRight;
     private boolean isJumping;
+    private boolean speedBoost = false;
+    private boolean jetpack = false;
+    private boolean magnet = false;
 
     private final int GRAVITY = 1;
     private final int JUMP_STRENGTH = -22;
@@ -36,25 +39,41 @@ public class Player {
         isJumping = false;
     }
 
+    public void setSpeedBoost(boolean boost) { this.speedBoost = boost; }
+    public void setJetpack(boolean jp) { this.jetpack = jp; }
+    public void setMagnet(boolean m) { this.magnet = m; }
+
+    public boolean hasMagnet() { return magnet; }
+
     public void moveLeft() {
-        speedX = -MOVE_SPEED;
+        speedX = speedBoost ? -(int)(MOVE_SPEED * 1.4) : -MOVE_SPEED;
         facingRight = false;
     }
 
     public void moveRight() {
-        speedX = MOVE_SPEED;
+        speedX = speedBoost ? (int)(MOVE_SPEED * 1.4) : MOVE_SPEED;
         facingRight = true;
     }
 
     public void jump() {
         if (onGround) {
-            speedY = JUMP_STRENGTH;
+            speedY = speedBoost ? (int)(JUMP_STRENGTH * 1.2) : JUMP_STRENGTH;
             isJumping = true;
         }
     }
 
+    public void jetpackFly(boolean up, boolean down) {
+        if (jetpack && !onGround) {
+            if (up) speedY = -8;
+            else if (down) speedY = 5;
+            else speedY = 0;
+        }
+    }
+
     public void update(ArrayList<Platform> platforms) {
-        speedY += GRAVITY;
+        speedY += jetpack ? 0.3 : GRAVITY;
+        if (speedY > 8) speedY = 8;
+
         x += speedX;
         y += speedY;
 
@@ -86,63 +105,55 @@ public class Player {
         animationFrame = (animationFrame + 1) % 60;
     }
 
-    public void draw(Graphics2D g, int camX, int camY) {
+    public void draw(Graphics2D g, int camX) {
         int screenX = x - camX;
-        int screenY = y - camY;
-
-        if (sprite != null && !isJumping) {
+        if (sprite != null && !isJumping && !jetpack) {
             int drawX = facingRight ? screenX : screenX + width;
             int drawWidth = facingRight ? width : -width;
-            g.drawImage(sprite, drawX, screenY, drawWidth, height, null);
+            g.drawImage(sprite, drawX, y, drawWidth, height, null);
+        } else if (jetpack) {
+            drawJetpackCharacter(g, screenX, y);
         } else {
-            drawJumpCharacter(g, screenX, screenY);
+            drawJumpCharacter(g, screenX, y);
         }
     }
 
+    private void drawJetpackCharacter(Graphics2D g, int sx, int sy) {
+        g.setColor(Color.ORANGE);
+        for (int i = 0; i < 3; i++)
+            g.fillRect(sx + 10 + i*6, sy + height, 4, 6 + (animationFrame % 4));
+        g.setColor(Color.YELLOW);
+        g.fillRect(sx + 14, sy + height + 2, 4, 4);
+        drawJumpCharacter(g, sx, sy);
+    }
+
     private void drawJumpCharacter(Graphics2D g, int sx, int sy) {
-        // Кепка
         g.setColor(shirtColor);
         g.fillRect(sx + 2, sy - 6, 28, 10);
-
-        // Голова
         g.setColor(skinColor);
         g.fillRect(sx + 2, sy + 2, 28, 16);
-
-        // Глаза выпученные
         g.setColor(Color.WHITE);
         g.fillOval(sx + 6, sy + 4, 10, 10);
         g.fillOval(sx + 16, sy + 4, 10, 10);
         g.setColor(Color.BLACK);
         g.fillOval(sx + 9, sy + 7, 4, 4);
         g.fillOval(sx + 19, sy + 7, 4, 4);
-
-        // Рот
         g.setColor(Color.BLACK);
         g.fillOval(sx + 12, sy + 12, 8, 6);
         g.setColor(new Color(255, 100, 100));
         g.fillOval(sx + 13, sy + 13, 6, 4);
-
-        // Усы
         g.setColor(hairColor);
         g.fillRect(sx + 4, sy + 10, 24, 2);
         g.fillRect(sx, sy + 9, 4, 4);
         g.fillRect(sx + 28, sy + 9, 4, 4);
-
-        // Рубашка
         g.setColor(shirtColor);
         g.fillRect(sx + 4, sy + 18, 24, 10);
-
-        // Руки в стороны
         g.setColor(skinColor);
         g.fillRect(sx - 6, sy + 18, 8, 5);
         g.fillRect(sx + width - 2, sy + 18, 8, 5);
-
-        // Ладошки
         g.setColor(skinColor.brighter());
         g.fillRect(sx - 8, sy + 17, 5, 7);
         g.fillRect(sx + width + 3, sy + 17, 5, 7);
-
-        // Штаны
         g.setColor(pantsColor);
         g.fillRect(sx + 4, sy + 24, 10, 8);
         g.fillRect(sx + 18, sy + 24, 10, 8);

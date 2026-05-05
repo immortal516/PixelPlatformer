@@ -1,27 +1,45 @@
 package entities;
 
+import utils.Assets;
+
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
 public class Platform {
     private int x, y, width, height;
+    private boolean isGround;
 
     public Platform(int x, int y, int width, int height) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.isGround = (width >= 500);
     }
 
-    public void draw(Graphics2D g, int camX, int camY) {
+    public boolean isGround() { return isGround; }
+
+    public void draw(Graphics2D g, int camX) {
         int screenX = x - camX;
-        int screenY = y - camY;
-        g.setColor(new Color(34, 139, 34));
-        g.fillRect(screenX, screenY, width, height);
-        g.setColor(new Color(0, 100, 0));
-        g.fillRect(screenX, screenY, width, 5);
-        g.setColor(new Color(0, 80, 0));
-        for (int i = 0; i < width; i += 20) {
-            g.fillRect(screenX + i, screenY + 5, 10, 3);
+
+        if (isGround) {
+            BufferedImage tile = Assets.groundTile;
+            int tw = tile.getWidth();
+            int th = tile.getHeight();
+            for (int tx = screenX; tx < screenX + width; tx += tw) {
+                for (int ty = y; ty < y + height; ty += th) {
+                    g.drawImage(tile, tx, ty,
+                            Math.min(tw, screenX + width - tx),
+                            Math.min(th, y + height - ty), null);
+                }
+            }
+        } else {
+            BufferedImage tile = Assets.platformTile;
+            int tw = tile.getWidth();
+            for (int tx = screenX; tx < screenX + width; tx += tw) {
+                g.drawImage(tile, tx, y,
+                        Math.min(tw, screenX + width - tx), height, null);
+            }
         }
     }
 
