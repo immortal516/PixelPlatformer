@@ -17,10 +17,20 @@ public class Coin {
 
     public void update() {
         bobOffset += bobSpeed;
-        x += magnetVX;
-        y += magnetVY;
-        magnetVX *= 0.9;
-        magnetVY *= 0.9;
+        // Если действует магнит — не гасим скорость
+        if (magnetVX != 0 || magnetVY != 0) {
+            x += magnetVX;
+            y += magnetVY;
+            // Ускоряемся к игроку, а не замедляемся
+            magnetVX *= 1.05;
+            magnetVY *= 1.05;
+            // Ограничение максимальной скорости
+            double speed = Math.sqrt(magnetVX * magnetVX + magnetVY * magnetVY);
+            if (speed > 8) {
+                magnetVX = magnetVX / speed * 8;
+                magnetVY = magnetVY / speed * 8;
+            }
+        }
     }
 
     public void magnetPull(double vx, double vy) {

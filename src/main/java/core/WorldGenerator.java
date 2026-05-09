@@ -78,7 +78,8 @@ public class WorldGenerator {
     }
 
     public void generateDangers() {
-        for (Platform p : platforms) {
+        for (int i = 0; i < platforms.size(); i++) {
+            Platform p = platforms.get(i);
             if (p.getWidth() < 500 && random.nextInt(100) < 2) {
                 dangers.add(new Danger(
                         p.getX() + random.nextInt(Math.max(1, p.getWidth())),
@@ -90,18 +91,21 @@ public class WorldGenerator {
 
     public void generatePowerUps(int score) {
         int required = hardcoreMode ? 70 : 30;
+        // Джетпак ТОЛЬКО если набрано нужное количество монет и ещё не спавнился
         if (!jetpackSpawned && score >= required) {
-            // Спавним джетпак на первой подходящей платформе
-            for (Platform p : platforms) {
-                if (p.getWidth() < 500 && p.getX() > 200 && p.getX() < 2000) {
+            for (int i = 0; i < platforms.size(); i++) {
+                Platform p = platforms.get(i);
+                if (p.getWidth() < 500 && p.getX() > 300 && p.getX() < 3000) {
                     powerUps.add(new PowerUp(p.getX() + p.getWidth()/2, p.getBounds().y - 25, PowerUp.JETPACK));
                     jetpackSpawned = true;
-                    break;
+                    return;
                 }
             }
         }
+        // Рандомные бонусы (редко)
         if (random.nextInt(400) < 1) {
-            for (Platform p : platforms) {
+            for (int i = 0; i < platforms.size(); i++) {
+                Platform p = platforms.get(i);
                 if (p.getWidth() < 500 && random.nextInt(10) < 3) {
                     powerUps.add(new PowerUp(p.getX() + p.getWidth()/2, p.getBounds().y - 25, random.nextInt(3)));
                     break;
@@ -126,10 +130,19 @@ public class WorldGenerator {
     }
 
     public void cleanUp(int limit) {
-        platforms.removeIf(p -> p.getX() + p.getWidth() < limit && p.getWidth() < 500);
-        coins.removeIf(c -> c.getX() < limit);
-        dangers.removeIf(d -> d.getX() < limit);
-        powerUps.removeIf(pu -> pu.getX() < limit);
+        for (int i = platforms.size() - 1; i >= 0; i--) {
+            Platform p = platforms.get(i);
+            if (p.getX() + p.getWidth() < limit && p.getWidth() < 500) platforms.remove(i);
+        }
+        for (int i = coins.size() - 1; i >= 0; i--) {
+            if (coins.get(i).getX() < limit) coins.remove(i);
+        }
+        for (int i = dangers.size() - 1; i >= 0; i--) {
+            if (dangers.get(i).getX() < limit) dangers.remove(i);
+        }
+        for (int i = powerUps.size() - 1; i >= 0; i--) {
+            if (powerUps.get(i).getX() < limit) powerUps.remove(i);
+        }
     }
 
     public void reset() {
@@ -159,7 +172,8 @@ public class WorldGenerator {
     private boolean platformOverlaps(Platform newPlat) {
         Rectangle nr = newPlat.getBounds();
         Rectangle nrWithGap = new Rectangle(nr.x - 10, nr.y - 55, nr.width + 20, nr.height + 110);
-        for (Platform p : platforms) {
+        for (int i = 0; i < platforms.size(); i++) {
+            Platform p = platforms.get(i);
             if (p.getWidth() >= 500) continue;
             if (nrWithGap.intersects(p.getBounds())) return true;
         }
@@ -181,7 +195,9 @@ public class WorldGenerator {
 
     private boolean isCoinColliding(int x, int y) {
         Rectangle cr = new Rectangle(x - 8, y - 10, 16, 20);
-        for (Platform p : platforms) if (cr.intersects(p.getBounds())) return true;
+        for (int i = 0; i < platforms.size(); i++) {
+            if (cr.intersects(platforms.get(i).getBounds())) return true;
+        }
         return false;
     }
 }

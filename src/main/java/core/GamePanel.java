@@ -24,6 +24,7 @@ public class GamePanel extends JPanel implements Runnable {
     private Player player;
     private ArrayList<Platform> platforms;
     private ArrayList<Coin> coins;
+    private ArrayList<Coin> jetpackCoins;
     private ArrayList<Danger> dangers;
     private ArrayList<PowerUp> powerUps;
     private InputHandler input;
@@ -61,6 +62,7 @@ public class GamePanel extends JPanel implements Runnable {
     private int jetpackTimer = 0;
     private final int POWER_DURATION = 300;
     private double bobOffset = 0;
+    private int jetpackCoinSpawnTimer = 0;
 
     public GamePanel() {
         setPreferredSize(new Dimension(Game.WIDTH, Game.HEIGHT));
@@ -72,6 +74,7 @@ public class GamePanel extends JPanel implements Runnable {
         random = new Random();
         platforms = new ArrayList<>();
         coins = new ArrayList<>();
+        jetpackCoins = new ArrayList<>();
         dangers = new ArrayList<>();
         powerUps = new ArrayList<>();
         backClouds = new ArrayList<>();
@@ -111,10 +114,12 @@ public class GamePanel extends JPanel implements Runnable {
         jetpackActive = false;
         jetpackTimer = 0;
         bobOffset = 0;
+        jetpackCoinSpawnTimer = 0;
         hardcoreMode = hardcoreToggle;
 
         platforms.clear();
         coins.clear();
+        jetpackCoins.clear();
         dangers.clear();
         powerUps.clear();
         backClouds.clear();
@@ -194,25 +199,29 @@ public class GamePanel extends JPanel implements Runnable {
         if (input.isJump() && player.isOnGround()) player.jump();
 
         // Джетпак
-        if (jetpackActive && !player.isOnGround()) {
-            player.jetpackFly(input.isJump(), input.isDown());
-            if (random.nextInt(15) < 2) {
-                for (int i = 0; i < 6; i++) {
-                    double angle = i * Math.PI * 2 / 6 + bobOffset;
-                    coins.add(new Coin(
-                            player.getX() + (int)(Math.cos(angle) * 50),
-                            player.getY() + (int)(Math.sin(angle) * 50)
+        if (jetpackActive) {
+            if (!player.isOnGround()) {
+                player.jetpackFly(input.isJump(), input.isDown());
+            }
+            player.setJetpack(true);
+            jetpackTimer--;
+            jetpackCoinSpawnTimer++;
+
+            // Спавн небесных монет по всей верхней части экрана
+            if (jetpackCoinSpawnTimer % 30 == 0) {
+                for (int i = 0; i < 5; i++) {
+                    jetpackCoins.add(new Coin(
+                            player.getX() + random.nextInt(400) - 200,
+                            50 + random.nextInt(200)
                     ));
                 }
             }
-        }
 
-        if (jetpackActive) {
-            player.setJetpack(true);
-            jetpackTimer--;
             if (jetpackTimer <= 0) {
                 jetpackActive = false;
                 player.setJetpack(false);
+                jetpackCoins.clear(); // удаляем все небесные монеты
+                jetpackCoinSpawnTimer = 0;
             }
         }
 
@@ -223,21 +232,22 @@ public class GamePanel extends JPanel implements Runnable {
         worldGen.generateMoreWorld(playerRightX);
         worldGen.generatePowerUps(score);
 
-        // Магнит — притягиваем монетки к игроку
+        // Магнит (радиус 250)
         if (magnetActive) {
             magnetTimer--;
             if (magnetTimer <= 0) {
                 magnetActive = false;
                 player.setMagnet(false);
             }
-            for (Coin coin : coins) {
-                int dx = player.getX() + PLAYER_W/2 - coin.getX();
-                int dy = player.getY() + PLAYER_H/2 - (int)coin.getBounds().getCenterY();
-                double dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 200 && dist > 5) {
-                    // Смещаем монетку к игроку
-                    coin.magnetPull(dx / dist * 3, dy / dist * 3);
-                }
+            // Магнитим обычные монеты
+            for (int i = 0; i < coins.size(); i++) {
+                Coin coin = coins.get(i);
+                pullCoin(coin, 250);
+            }
+            // Магнитим джетпак-монеты
+            for (int i = 0; i < jetpackCoins.size(); i++) {
+                Coin coin = jetpackCoins.get(i);
+                pullCoin(coin, 250);
             }
         }
 
@@ -258,6 +268,7 @@ public class GamePanel extends JPanel implements Runnable {
         camera.update(player.getX() + PLAYER_W / 2);
         updateClouds();
 
+        // Сбор обычных монет
         for (int i = coins.size() - 1; i >= 0; i--) {
             Coin coin = coins.get(i);
             coin.update();
@@ -267,6 +278,17 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
+        // Сбор джетпак-монет
+        for (int i = jetpackCoins.size() - 1; i >= 0; i--) {
+            Coin coin = jetpackCoins.get(i);
+            coin.update();
+            if (player.getBounds().intersects(coin.getBounds())) {
+                jetpackCoins.remove(i);
+                score += hardcoreMode ? 4 : 2;
+            }
+        }
+
+        // Сбор бонусов
         for (int i = powerUps.size() - 1; i >= 0; i--) {
             PowerUp pu = powerUps.get(i);
             pu.update();
@@ -281,12 +303,18 @@ public class GamePanel extends JPanel implements Runnable {
         }
     }
 
+    private void pullCoin(Coin coin, int radius) {
+        int dx = player.getX() + PLAYER_W/2 - coin.getX();
+        int dy = player.getY() + PLAYER_H/2 - (int)coin.getBounds().getCenterY();
+        double dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < radius && dist > 5) {
+            coin.magnetPull(dx / dist * 6, dy / dist * 6); // увеличено с 4 до 6
+        }
+    }
+
     private void applyPowerUp(PowerUp pu) {
         switch (pu.getType()) {
-            case PowerUp.TIME_BONUS -> {
-                challenge.addTime(5);
-                // Эффект: голубая вспышка на игроке
-            }
+            case PowerUp.TIME_BONUS -> challenge.addTime(5);
             case PowerUp.MAGNET -> {
                 magnetActive = true;
                 magnetTimer = POWER_DURATION;
@@ -296,12 +324,19 @@ public class GamePanel extends JPanel implements Runnable {
                 jetpackActive = true;
                 jetpackTimer = POWER_DURATION;
                 player.setJetpack(true);
+                jetpackCoinSpawnTimer = 0;
+                jetpackCoins.clear();
             }
         }
     }
 
     private void endGame() {
         challenge.forceEnd();
+        jetpackCoins.clear();
+        jetpackActive = false;
+        player.setJetpack(false);
+        magnetActive = false;
+        player.setMagnet(false);
         newRecord = leaderboard.addScore(score);
         if (newRecord) {
             showFireworks = true;
@@ -317,8 +352,10 @@ public class GamePanel extends JPanel implements Runnable {
 
     private void updateFireworks() {
         fireworkTimer++;
-        fireworks.forEach(Firework::update);
-        fireworks.removeIf(Firework::isDead);
+        for (int i = 0; i < fireworks.size(); i++) fireworks.get(i).update();
+        for (int i = fireworks.size() - 1; i >= 0; i--) {
+            if (fireworks.get(i).isDead()) fireworks.remove(i);
+        }
         if (fireworkTimer % 20 == 0 && fireworks.size() < 50 && fireworkTimer < 300) {
             for (int i = 0; i < 5; i++) {
                 fireworks.add(new Firework(
@@ -352,7 +389,6 @@ public class GamePanel extends JPanel implements Runnable {
                 c.x = camera.getX() + Game.WIDTH + random.nextInt(300);
                 c.y = random.nextInt(200);
             }
-            // Если облако ушло далеко вправо за камеру — вернуть
             if (c.x > camera.getX() + Game.WIDTH + 400) {
                 c.x = camera.getX() - random.nextInt(300);
             }
@@ -399,13 +435,13 @@ public class GamePanel extends JPanel implements Runnable {
             }
         }
 
-        for (Platform p : platforms) p.draw(g2d, camX);
-        for (Coin c : coins) c.draw(g2d, camX);
-        for (Danger d : dangers) d.draw(g2d, camX);
-        for (PowerUp pu : powerUps) pu.draw(g2d, camX);
+        for (int i = 0; i < platforms.size(); i++) platforms.get(i).draw(g2d, camX);
+        for (int i = 0; i < coins.size(); i++) coins.get(i).draw(g2d, camX);
+        for (int i = 0; i < jetpackCoins.size(); i++) jetpackCoins.get(i).draw(g2d, camX);
+        for (int i = 0; i < dangers.size(); i++) dangers.get(i).draw(g2d, camX);
+        for (int i = 0; i < powerUps.size(); i++) powerUps.get(i).draw(g2d, camX);
         player.draw(g2d, camX);
 
-        // UI
         g2d.setColor(Color.BLACK);
         g2d.setFont(gameFont);
         if (!challenge.isStarted() && !challenge.isOver()) {
@@ -427,9 +463,8 @@ public class GamePanel extends JPanel implements Runnable {
             g2d.setColor(Color.RED);
             g2d.setFont(smallFont);
             g2d.drawString("MAGNET " + (magnetTimer/60) + "s", 10, 50);
-            // Ореол вокруг игрока
             g2d.setColor(new Color(255, 0, 0, 40));
-            g2d.fillOval(player.getX() - camX - 100, player.getY() - 100, 232, 232);
+            g2d.fillOval(player.getX() - camX - 125, player.getY() - 125, 282, 282);
         }
         if (jetpackActive) {
             g2d.setColor(Color.ORANGE);
@@ -471,11 +506,14 @@ public class GamePanel extends JPanel implements Runnable {
                     Game.WIDTH / 2 - 100, Game.HEIGHT - 45);
         }
 
-        if (showFireworks) fireworks.forEach(f -> f.draw(g2d));
+        if (showFireworks) {
+            for (int i = 0; i < fireworks.size(); i++) fireworks.get(i).draw(g2d);
+        }
     }
 
     private void drawCloudLayer(Graphics2D g, ArrayList<Cloud> clouds, float factor) {
-        for (Cloud c : clouds) {
+        for (int i = 0; i < clouds.size(); i++) {
+            Cloud c = clouds.get(i);
             int sx = (int)(c.x - camera.getX() * factor);
             if (sx > -200 && sx < Game.WIDTH + 200) {
                 if (hardcoreMode) {

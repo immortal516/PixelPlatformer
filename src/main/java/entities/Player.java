@@ -42,7 +42,6 @@ public class Player {
     public void setSpeedBoost(boolean boost) { this.speedBoost = boost; }
     public void setJetpack(boolean jp) { this.jetpack = jp; }
     public void setMagnet(boolean m) { this.magnet = m; }
-
     public boolean hasMagnet() { return magnet; }
 
     public void moveLeft() {
@@ -82,7 +81,8 @@ public class Player {
         onGround = false;
         Rectangle bounds = new Rectangle(x, y, width, height);
 
-        for (Platform platform : platforms) {
+        for (int i = 0; i < platforms.size(); i++) {
+            Platform platform = platforms.get(i);
             Rectangle platBounds = platform.getBounds();
             if (bounds.intersects(platBounds)) {
                 if (speedY > 0 && y + height - speedY <= platBounds.y) {
